@@ -57,9 +57,9 @@ class TestBotCommands:
                 hello_command = command
                 break
 
-        with patch('builtins.print') as mock_print:
+        with patch('logging.info') as mock_logging:
             await hello_command.callback(mock_interaction)
-            mock_print.assert_called_with("test_logger requested /hello")
+            mock_logging.assert_called_with("test_logger requested /hello")
 
     def test_bot_configuration(self):
         """Test bot configuration is correct."""

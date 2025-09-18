@@ -39,7 +39,7 @@ async def test_hello_command(mock_interaction):
 @pytest.mark.asyncio
 async def test_on_ready_event():
     """Test the on_ready event handler."""
-    with patch('builtins.print') as mock_print:
+    with patch('logging.info') as mock_logging:
         # Mock bot.tree.sync
         with patch.object(bot.tree, 'sync', return_value=[]) as mock_sync:
             # Test the sync functionality directly
@@ -66,9 +66,9 @@ async def test_hello_command_with_different_user(mock_interaction):
             hello_command = command
             break
 
-    with patch('builtins.print') as mock_print:
+    with patch('logging.info') as mock_logging:
         await hello_command.callback(mock_interaction)
-        mock_print.assert_called_with("different_user requested /hello")
+        mock_logging.assert_called_with("different_user requested /hello")
 
 
 @pytest.mark.asyncio
@@ -107,11 +107,44 @@ async def test_echo_command(mock_interaction):
     mock_interaction.response.send_message.assert_called_once_with(f"Echo: {test_message}")
 
 
+@pytest.mark.asyncio
+async def test_maketxt_command_exists(mock_interaction):
+    """Test that the maketxt command exists and can be called."""
+    # Add channel and followup mocks for maketxt command
+    mock_interaction.channel = MagicMock()
+    mock_interaction.channel.name = "test-channel"
+    mock_interaction.followup = MagicMock()
+    mock_interaction.followup.send = AsyncMock()
+
+    maketxt_command = None
+    for command in bot.tree.get_commands():
+        if command.name == "maketxt":
+            maketxt_command = command
+            break
+
+    assert maketxt_command is not None
+    assert maketxt_command.description == "Export all channel messages to a text file"
+
+    # Mock the channel history to return empty list
+    async def async_iter():
+        for item in []:
+            yield item
+
+    mock_interaction.channel.history = MagicMock(return_value=async_iter())
+
+    with patch('builtins.open'), patch('os.makedirs'):
+        # This should not raise an exception
+        await maketxt_command.callback(mock_interaction)
+
+        # Verify initial response was sent
+        mock_interaction.response.send_message.assert_called_once_with("📝 Starting to export channel messages to text file...")
+
+
 def test_all_commands_exist():
     """Test that all commands are registered."""
     commands = bot.tree.get_commands()
     command_names = [cmd.name for cmd in commands]
-    expected_commands = ["hello", "ping", "echo"]
+    expected_commands = ["hello", "ping", "echo", "maketxt"]
 
     for cmd in expected_commands:
         assert cmd in command_names, f"Command '{cmd}' not found in registered commands"

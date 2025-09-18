@@ -12,7 +12,23 @@ from watchdog.events import FileSystemEventHandler
 
 load_dotenv()
 
-logging.basicConfig(level=logging.INFO)
+# Production logging setup
+if os.getenv('ENVIRONMENT') == 'production':
+    # Create logs directory if it doesn't exist
+    os.makedirs('logs', exist_ok=True)
+
+    # Configure logging for production
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler('logs/bot.log'),
+            logging.StreamHandler()
+        ]
+    )
+else:
+    # Development logging
+    logging.basicConfig(level=logging.INFO)
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -39,16 +55,24 @@ def setup_file_watcher(restart_callback):
 
 @bot.event
 async def on_ready():
-    print(f'{bot.user} has connected to Discord!')
+    logging.info(f'{bot.user} has connected to Discord!')
     try:
         synced = await bot.tree.sync()
-        print(f"Synced {len(synced)} command(s)")
+        logging.info(f"Synced {len(synced)} command(s)")
     except Exception as e:
-        print(f"Failed to sync commands: {e}")
+        logging.error(f"Failed to sync commands: {e}")
+
+@bot.event
+async def on_error(event, *args, **kwargs):
+    logging.error(f'An error occurred in event {event}', exc_info=True)
+
+@bot.event
+async def on_command_error(ctx, error):
+    logging.error(f'Command error: {error}', exc_info=True)
 
 @bot.tree.command(name="hello", description="Responds with 'world'")
 async def hello(interaction: discord.Interaction):
-    print(f'{interaction.user.name} requested /hello')
+    logging.info(f'{interaction.user.name} requested /hello')
     await interaction.response.send_message("discord worldX")
 
 @bot.tree.command(name="ping", description="Check bot latency")
@@ -58,17 +82,17 @@ async def ping(interaction: discord.Interaction):
         latency_str = "Unknown"
     else:
         latency_str = f"{round(latency * 1000)}ms"
-    print(f'{interaction.user.name} requested /ping')
+    logging.info(f'{interaction.user.name} requested /ping')
     await interaction.response.send_message(f"Pong! Latency: {latency_str}")
 
 @bot.tree.command(name="echo", description="Echo your message")
 async def echo(interaction: discord.Interaction, message: str):
-    print(f'{interaction.user.name} requested /echo with: {message}')
+    logging.info(f'{interaction.user.name} requested /echo with: {message}')
     await interaction.response.send_message(f"Echo: {message}")
 
 @bot.tree.command(name="maketxt", description="Export all channel messages to a text file")
 async def maketxt(interaction: discord.Interaction):
-    print(f'{interaction.user.name} requested /maketxt in channel: {interaction.channel.name}')
+    logging.info(f'{interaction.user.name} requested /maketxt in channel: {interaction.channel.name}')
 
     # Send initial response
     await interaction.response.send_message("📝 Starting to export channel messages to text file...")
@@ -123,7 +147,7 @@ async def maketxt(interaction: discord.Interaction):
         await interaction.followup.send("❌ Error: I don't have permission to read message history in this channel.")
     except Exception as e:
         error_message = f"❌ Error occurred while exporting messages: {str(e)}"
-        print(f"Error in maketxt command: {e}")
+        logging.error(f"Error in maketxt command: {e}", exc_info=True)
         await interaction.followup.send(error_message)
 
 def restart_bot():

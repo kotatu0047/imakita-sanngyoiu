@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  discord-bot:
+    build: .
+    env_file:
+      - .env
+    restart: unless-stopped
+    volumes:
+      - ./exports:/app/exports
+      - ./logs:/app/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ENVIRONMENT=production
+    command: python /app/bot/main.py
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8080/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
