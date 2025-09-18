@@ -1,6 +1,6 @@
 # Discord Bot
 
-A simple Discord bot that responds to the `/hello` slash command with "world".
+A Discord bot with auto-restart functionality that includes `/hello`, `/ping`, and `/echo` slash commands.
 
 ## Setup
 
@@ -24,30 +24,129 @@ A simple Discord bot that responds to the `/hello` slash command with "world".
    docker-compose up --build
    ```
 
+## Available Commands
+
+- `/hello` - Responds with "discord world"
+- `/ping` - Shows bot latency in milliseconds
+- `/echo <message>` - Echoes back your message
+
 ## Usage
 
 1. Invite the bot to your Discord server with the proper permissions
-2. Use the `/hello` slash command in any channel
-3. The bot will respond with "world"
+2. Use any of the slash commands listed above in any channel
 
 ## Development
 
-The bot code is located in `bot/main.py`. To make changes:
+The bot code is located in `bot/main.py`. The bot includes automatic restart functionality that monitors file changes.
 
-1. Edit the code
-2. Restart the container: `docker-compose restart`
+### Auto-Restart Feature
+- The bot automatically runs tests when any `.py` file is modified
+- If tests pass, the bot restarts automatically
+- If tests fail, the bot stays running and shows test results
+- Docker Compose will automatically restart the bot process if it crashes
+- No manual intervention needed during development
+
+### Manual Docker Operations
+
+**Start the bot:**
+```bash
+docker-compose up --build
+```
+
+**Start in background:**
+```bash
+docker-compose up -d --build
+```
+
+**Restart the bot:**
+```bash
+docker-compose restart
+```
+
+**Stop the bot:**
+```bash
+docker-compose down
+```
+
+**View logs:**
+```bash
+docker-compose logs -f
+```
+
+**Rebuild and restart:**
+```bash
+docker-compose down && docker-compose up --build
+```
+
+## Testing
+
+The project includes comprehensive automated testing with multiple options:
+
+### Automatic Testing (Recommended for Development)
+
+**Option 1: Built-in with Bot**
+- When running the bot with `docker-compose up`, tests automatically run on file changes
+- Bot only restarts if tests pass
+
+**Option 2: Standalone Test Watcher**
+```bash
+python watch_and_test.py
+```
+- Runs tests automatically when any Python file changes
+- Can be used independently of the bot
+- Shows detailed test output
+
+### Manual Testing
+
+**Install test dependencies:**
+```bash
+pip install -r requirements.txt
+```
+
+**Run all tests:**
+```bash
+pytest
+```
+
+**Run tests with verbose output:**
+```bash
+pytest -v
+```
+
+**Run specific test file:**
+```bash
+pytest test_bot.py -v
+```
+
+**Quick test run:**
+```bash
+pytest -q
+```
+
+### Test Coverage
+- Command functionality testing (`/hello`, `/ping`, `/echo`)
+- User interaction mocking
+- Bot configuration validation
+- Latency testing for ping command (handles both connected/disconnected states)
+- Message parameter testing for echo command
+- Command registration verification
+- Auto-restart functionality testing
 
 ## Project Structure
 
 ```
 .
 ├── bot/
-│   └── main.py          # Main bot code
-├── docker-compose.yml   # Docker development setup
-├── Dockerfile          # Container configuration
-├── requirements.txt    # Python dependencies
-├── .env.example       # Environment variable template
-└── README.md         # This file
+│   ├── main.py              # Main bot code with auto-restart and testing
+│   └── test_commands.py     # Command-specific tests
+├── docker-compose.yml       # Docker development setup
+├── Dockerfile              # Container configuration
+├── requirements.txt        # Python dependencies (includes pytest)
+├── test_bot.py            # Main test suite
+├── watch_and_test.py      # Standalone test watcher script
+├── pytest.ini            # Pytest configuration
+├── .env.example          # Environment variable template
+└── README.md            # This file
 ```
 
 app id
