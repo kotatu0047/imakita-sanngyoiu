@@ -11,7 +11,7 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
 
-class TestRunner(FileSystemEventHandler):
+class AutoTestRunner(FileSystemEventHandler):
     def __init__(self):
         self.last_test_time = 0
 
@@ -71,7 +71,7 @@ def main():
     print("Watching for changes in Python files...")
     print("Press Ctrl+C to stop")
 
-    event_handler = TestRunner()
+    event_handler = AutoTestRunner()
     observer = Observer()
     observer.schedule(event_handler, path='.', recursive=True)
     observer.start()

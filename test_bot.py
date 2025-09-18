@@ -33,7 +33,7 @@ async def test_hello_command(mock_interaction):
     await hello_command.callback(mock_interaction)
 
     # Verify the response
-    mock_interaction.response.send_message.assert_called_once_with("discord world")
+    mock_interaction.response.send_message.assert_called_once_with("discord worldX")
 
 
 @pytest.mark.asyncio

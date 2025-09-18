@@ -40,9 +40,7 @@ A Discord bot with auto-restart functionality that includes `/hello`, `/ping`, a
 The bot code is located in `bot/main.py`. The bot includes automatic restart functionality that monitors file changes.
 
 ### Auto-Restart Feature
-- The bot automatically runs tests when any `.py` file is modified
-- If tests pass, the bot restarts automatically
-- If tests fail, the bot stays running and shows test results
+- The bot automatically restarts when any `.py` file is modified
 - Docker Compose will automatically restart the bot process if it crashes
 - No manual intervention needed during development
 
@@ -84,11 +82,7 @@ The project includes comprehensive automated testing with multiple options:
 
 ### Automatic Testing (Recommended for Development)
 
-**Option 1: Built-in with Bot**
-- When running the bot with `docker-compose up`, tests automatically run on file changes
-- Bot only restarts if tests pass
-
-**Option 2: Standalone Test Watcher**
+**Standalone Test Watcher**
 ```bash
 python watch_and_test.py
 ```
@@ -137,7 +131,7 @@ pytest -q
 ```
 .
 ├── bot/
-│   ├── main.py              # Main bot code with auto-restart and testing
+│   ├── main.py              # Main bot code with auto-restart
 │   └── test_commands.py     # Command-specific tests
 ├── docker-compose.yml       # Docker development setup
 ├── Dockerfile              # Container configuration
