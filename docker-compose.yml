@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  discord-bot:
+    build: .
+    env_file:
+      - .env
+    restart: unless-stopped
+    volumes:
+      - ./bot:/app/bot
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: sh -c "while true; do python /app/bot/main.py; echo 'Bot crashed, restarting in 1 second...'; sleep 1; done"
