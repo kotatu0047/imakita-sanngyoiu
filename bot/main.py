@@ -4,6 +4,7 @@ import discord
 import asyncio
 import threading
 import math
+from datetime import datetime
 from discord.ext import commands
 from dotenv import load_dotenv
 from watchdog.observers import Observer
@@ -64,6 +65,66 @@ async def ping(interaction: discord.Interaction):
 async def echo(interaction: discord.Interaction, message: str):
     print(f'{interaction.user.name} requested /echo with: {message}')
     await interaction.response.send_message(f"Echo: {message}")
+
+@bot.tree.command(name="maketxt", description="Export all channel messages to a text file")
+async def maketxt(interaction: discord.Interaction):
+    print(f'{interaction.user.name} requested /maketxt in channel: {interaction.channel.name}')
+
+    # Send initial response
+    await interaction.response.send_message("📝 Starting to export channel messages to text file...")
+
+    try:
+        # Get channel and create filename
+        channel = interaction.channel
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        safe_channel_name = "".join(c for c in channel.name if c.isalnum() or c in ('-', '_')).rstrip()
+
+        # Create exports directory if it doesn't exist
+        exports_dir = "exports"
+        os.makedirs(exports_dir, exist_ok=True)
+
+        filename = os.path.join(exports_dir, f"channel_logs_{safe_channel_name}_{timestamp}.txt")
+
+        # Fetch all messages from the channel
+        messages = []
+        async for message in channel.history(limit=None, oldest_first=True):
+            # Format message with timestamp, author, and content
+            timestamp_str = message.created_at.strftime("%Y-%m-%d %H:%M:%S")
+            author_name = message.author.display_name
+            content = message.content or "[No text content]"
+
+            # Handle attachments
+            if message.attachments:
+                attachment_info = ", ".join([f"[Attachment: {att.filename}]" for att in message.attachments])
+                content += f" {attachment_info}"
+
+            # Handle embeds
+            if message.embeds:
+                content += f" [Embeds: {len(message.embeds)}]"
+
+            formatted_message = f"[{timestamp_str}] {author_name}: {content}"
+            messages.append(formatted_message)
+
+        # Write to file
+        with open(filename, 'w', encoding='utf-8') as f:
+            f.write(f"Channel Log Export: #{channel.name}\n")
+            f.write(f"Export Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"Total Messages: {len(messages)}\n")
+            f.write("=" * 50 + "\n\n")
+
+            for message in messages:
+                f.write(message + "\n")
+
+        # Send success message
+        follow_up_message = f"✅ Successfully exported {len(messages)} messages to `{filename}` in the exports folder!"
+        await interaction.followup.send(follow_up_message)
+
+    except discord.Forbidden:
+        await interaction.followup.send("❌ Error: I don't have permission to read message history in this channel.")
+    except Exception as e:
+        error_message = f"❌ Error occurred while exporting messages: {str(e)}"
+        print(f"Error in maketxt command: {e}")
+        await interaction.followup.send(error_message)
 
 def restart_bot():
     print("Restarting bot...")

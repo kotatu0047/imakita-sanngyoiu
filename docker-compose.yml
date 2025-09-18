@@ -8,6 +8,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./bot:/app/bot
+      - ./exports:/app/exports
     environment:
       - PYTHONUNBUFFERED=1
     command: sh -c "while true; do python /app/bot/main.py; echo 'Bot crashed, restarting in 1 second...'; sleep 1; done"
