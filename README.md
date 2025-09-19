@@ -142,12 +142,3 @@ pytest -q
 ├── .env.example          # Environment variable template
 └── README.md            # This file
 ```
-
-app id
-1418152335514927116
-
-public key
-8451abb71b33b4d1dc535398c3b403f467839ec7b7e420fe75455244522016be
-
-vps pass
-Kotatu@0047
