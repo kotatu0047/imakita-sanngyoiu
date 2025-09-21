@@ -132,7 +132,7 @@ async def test_maketxt_command_exists(mock_interaction):
 
     mock_interaction.channel.history = MagicMock(return_value=async_iter())
 
-    with patch('builtins.open'), patch('os.makedirs'):
+    with patch('builtins.open'), patch('os.makedirs'), patch('discord.File'):
         # This should not raise an exception
         await maketxt_command.callback(mock_interaction)
 

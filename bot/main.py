@@ -139,9 +139,20 @@ async def maketxt(interaction: discord.Interaction):
             for message in messages:
                 f.write(message + "\n")
 
-        # Send success message
-        follow_up_message = f"✅ Successfully exported {len(messages)} messages to `{filename}` in the exports folder!"
-        await interaction.followup.send(follow_up_message)
+        # Upload file to Discord
+        try:
+            with open(filename, 'rb') as f:
+                discord_file = discord.File(f, filename=os.path.basename(filename))
+                follow_up_message = f"✅ Successfully exported {len(messages)} messages from #{channel.name}!"
+                await interaction.followup.send(follow_up_message, file=discord_file)
+
+            logging.info(f"File {filename} uploaded to Discord for user {interaction.user.name}")
+
+        except Exception as upload_error:
+            logging.error(f"Failed to upload file to Discord: {upload_error}", exc_info=True)
+            # Fallback to just sending a message about local file
+            follow_up_message = f"✅ Successfully exported {len(messages)} messages to `{filename}`, but failed to upload to Discord. File saved locally in exports folder."
+            await interaction.followup.send(follow_up_message)
 
     except discord.Forbidden:
         await interaction.followup.send("❌ Error: I don't have permission to read message history in this channel.")

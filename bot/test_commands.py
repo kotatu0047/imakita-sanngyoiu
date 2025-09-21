@@ -102,7 +102,8 @@ class TestBotCommands:
 
         mock_interaction.channel.history = MagicMock(return_value=async_iter())
 
-        with patch('builtins.open', mock_open()) as mock_file:
+        with patch('builtins.open', mock_open()) as mock_file, \
+             patch('discord.File') as mock_discord_file:
             # Execute the command
             await maketxt_command.callback(mock_interaction)
 
@@ -129,19 +130,24 @@ class TestBotCommands:
         mock_interaction.channel.history = MagicMock(return_value=async_iter())
 
         with patch('builtins.open', mock_open()) as mock_file, \
-             patch('os.makedirs') as mock_makedirs:
+             patch('os.makedirs') as mock_makedirs, \
+             patch('discord.File') as mock_discord_file:
             # Execute the command
             await maketxt_command.callback(mock_interaction)
 
             # Verify exports directory was created
             mock_makedirs.assert_called_once_with("exports", exist_ok=True)
 
-            # Verify file was opened for writing
-            mock_file.assert_called_once()
-            handle = mock_file.return_value
+            # Verify file was opened for writing (and for reading for upload)
+            assert mock_file.call_count >= 1
 
-            # Check that write was called multiple times (header + message)
-            assert handle.write.call_count > 0
+            # Verify Discord File was created for upload
+            mock_discord_file.assert_called_once()
+
+            # Verify followup was called with file upload
+            mock_interaction.followup.send.assert_called_once()
+            call_args = mock_interaction.followup.send.call_args
+            assert 'file' in call_args.kwargs
 
     @pytest.mark.asyncio
     async def test_maketxt_command_permission_error(self, mock_interaction):
@@ -192,7 +198,8 @@ class TestBotCommands:
             mock_file_content.append(content)
 
         with patch('builtins.open', mock_open()) as mock_file, \
-             patch('os.makedirs') as mock_makedirs:
+             patch('os.makedirs') as mock_makedirs, \
+             patch('discord.File') as mock_discord_file:
             mock_file.return_value.write.side_effect = mock_write
 
             # Execute the command
@@ -204,3 +211,38 @@ class TestBotCommands:
             assert "Total Messages:" in written_content
             assert "TestUser:" in written_content
             assert "Test message content" in written_content
+
+            # Verify file upload was attempted
+            mock_discord_file.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_maketxt_command_upload_failure(self, mock_interaction, mock_message):
+        """Test maketxt command handles upload failures gracefully."""
+        from main import bot
+
+        # Find the maketxt command
+        maketxt_command = None
+        for command in bot.tree.get_commands():
+            if command.name == "maketxt":
+                maketxt_command = command
+                break
+
+        # Mock channel history with one message
+        async def async_iter():
+            for item in [mock_message]:
+                yield item
+
+        mock_interaction.channel.history = MagicMock(return_value=async_iter())
+
+        with patch('builtins.open', mock_open()) as mock_file, \
+             patch('os.makedirs') as mock_makedirs, \
+             patch('discord.File', side_effect=Exception("Upload failed")) as mock_discord_file:
+
+            # Execute the command
+            await maketxt_command.callback(mock_interaction)
+
+            # Verify that fallback message was sent
+            mock_interaction.followup.send.assert_called_once()
+            call_args = mock_interaction.followup.send.call_args[0][0]
+            assert "failed to upload to Discord" in call_args
+            assert "saved locally" in call_args
